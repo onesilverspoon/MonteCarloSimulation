@@ -6,6 +6,22 @@
 #include <random>
 #include <omp.h>
 
+double norm_cdf(double x) {
+    return 0.5 * std::erfc(-x / std::sqrt(2));
+}
+
+double black_scholes_call(double S, double K, double r, double sigma, double T) {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
+    double d2 = d1 - sigma * std::sqrt(T);
+    return S * norm_cdf(d1) - K * std::exp(-r * T) * norm_cdf(d2);
+}
+double black_scholes_put(double S, double K, double r, double sigma, double T) {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
+    double d2 = d1 - sigma * std::sqrt(T);
+    return  K * std::exp(-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1);
+}
+
+
 void monte_carlo_call_put_price(int num_sims, double Option_price, double Strike_price, double risk_free_per, double sigma, double Time_till_exp, std::mt19937& gen, double& call_seq, double& put_seq) {
     double Drift = Time_till_exp * (risk_free_per - 0.5 * sigma * sigma);
     double Op_price_cur1 = 0.0;
@@ -145,6 +161,22 @@ int main()
     //std::cout << "Call: " << call_seq << "\nPut: " << put_seq << std::endl;
     std::cout << "Call Parallel: " << call_paral << "\nPut Parallel: " << put_paral << std::endl;
     std::cout << "Speedup: " << speedup << "x\nEfficiency: " << efficiency << "%" << std::endl;
+
+    //black_schole benchmark
+    double BS_call = black_scholes_call(Option_price, Strike_price, risk_free_per, sigma, Time_till_exp);
+    double abs_error_call = std::abs(call_seq - BS_call);
+    double rel_error_call = abs_error_call / BS_call;
+
+    double BS_put = black_scholes_put(Option_price, Strike_price, risk_free_per, sigma, Time_till_exp);
+    double abs_error_put = std::abs(put_seq - BS_put);
+    double rel_error_put = abs_error_put / BS_put;
+
+    std::cout << "Black-Scholes call:" << BS_call << std::endl;
+    std::cout << "Absolute error    :" << abs_error_call << std::endl;
+    std::cout << "Relative error    :" << rel_error_call << std::endl;
+    std::cout << "Black-Scholes puts:" << BS_put << std::endl;
+    std::cout << "Absolute error    :" << abs_error_put << std::endl;
+    std::cout << "Relative error    :" << rel_error_put << std::endl;
 
     return 0;
 }
