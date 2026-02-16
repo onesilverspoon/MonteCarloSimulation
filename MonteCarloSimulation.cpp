@@ -24,83 +24,103 @@ double black_scholes_put(double S, double K, double r, double sigma, double T) {
 
 void monte_carlo_call_put_price(int num_sims, double S, double K, double r, double sigma, double T, std::mt19937& gen, double& call_seq, double& put_seq) {
     double Drift = T * (r - 0.5 * sigma * sigma);
-    double Op_price_cur1 = 0.0;
-    double Op_price_cur2 = 0.0;
     double Vol_sq = sigma * std::sqrt(T);
-    double call_sum = 0.0;
-    double put_sum = 0.0;
-    double call_sq_sum = 0.0;
-    double put_sq_sum = 0.0;
-    double call_payoff1, call_payoff2;
-    double put_payoff1, put_payoff2;
-    double st_sum = 0.0;
-    double st_sq_sum = 0.0;
-    double cross_sum = 0.0;
-
     double Discount = std::exp(-r * T);
     int half_sims = num_sims / 2;
 
     std::normal_distribution<double> d(0.0, 1.0);
 
+    //stats
+    double call_sum = 0.0;
+    double put_sum = 0.0;
+    double call_sq_sum = 0.0;
+    double put_sq_sum = 0.0;
+
+    //beta
+    double Y_sum = 0.0;
+    double Y_sq_sum = 0.0;
+    double cross_sum = 0.0;
+
 
     for (int i = 0; i < half_sims; i++) {
         double gauss_bm = d(gen);
         double gauss_bm_antithetic = -gauss_bm;
-        Op_price_cur1 = S * std::exp(Drift + Vol_sq * gauss_bm);
-        Op_price_cur2 = S * std::exp(Drift + Vol_sq * gauss_bm_antithetic);
-        call_payoff1 = std::max(Op_price_cur1 - K, 0.0);
-        call_payoff2 = std::max(Op_price_cur2 - K, 0.0);
+        double ST1 = S * std::exp(Drift + Vol_sq * gauss_bm);
+        double ST2 = S * std::exp(Drift + Vol_sq * gauss_bm_antithetic);
 
+        double call_payoff1 = std::max(ST1 - K, 0.0);
+        double call_payoff2 = std::max(ST2 - K, 0.0);
+        double put_payoff1 = std::max(K - ST1, 0.0);
+        double put_payoff2 = std::max(K - ST2, 0.0);
+        //call stats
         call_sum += call_payoff1 + call_payoff2;
         call_sq_sum += call_payoff1 * call_payoff1 + call_payoff2 * call_payoff2;
 
-        put_payoff1 = std::max(K - Op_price_cur1, 0.0);
-        put_payoff2 = std::max(K - Op_price_cur2, 0.0);
-
+        //put stats
         put_sum += put_payoff1 + put_payoff2;
         put_sq_sum += put_payoff1 * put_payoff1 + put_payoff2 * put_payoff2;
 
-        st_sum += Op_price_cur1 + Op_price_cur2;
-        st_sq_sum += Op_price_cur1 * Op_price_cur1 + Op_price_cur2 * Op_price_cur2;
-        cross_sum += call_payoff1 * Op_price_cur1 + call_payoff2 * Op_price_cur2;
-
-
+        //beta
+        double discounted_call1 = call_payoff1 * Discount;
+        double discounted_call2 = call_payoff2 * Discount;
+        double discounted_ST1 = ST1 * Discount;
+        double discounted_ST2 = ST2 * Discount;
+        Y_sum += discounted_ST1 + discounted_ST2;
+        Y_sq_sum += discounted_ST1 * discounted_ST1 + discounted_ST2 * discounted_ST2;
+        cross_sum += discounted_call1 * discounted_ST1 + discounted_call2 * discounted_ST2;
     }
-    call_seq = (call_sum / static_cast<double>(num_sims)) * Discount;
-    put_seq = (put_sum / static_cast<double>(num_sims)) * Discount;
-
     //mean calculation
     double call_mean = call_sum / num_sims;
     double put_mean = put_sum / num_sims;
-    //var calculation
-    double call_var = (call_sq_sum / num_sims - call_mean * call_mean);
-    double put_var = (put_sq_sum / num_sims - put_mean * put_mean);
-    //standar error
-    double call_se = std::sqrt(call_var / num_sims);
-    double put_se = std::sqrt(put_var / num_sims);
-        
+    //price estimation
     call_seq = call_mean * Discount;
     put_seq = put_mean * Discount;
 
+    //var calculation (undiscounted)
+    double call_var = (call_sq_sum / num_sims) - call_mean * call_mean;
+    double put_var = (put_sq_sum / num_sims) - put_mean * put_mean;
+    //var Monte Carlo discounted
+    double call_var_MC = call_var * (Discount * Discount);
+    double put_var_MC = put_var * (Discount * Discount);
+
+    //standard error
+    double call_se = std::sqrt(call_var_MC / num_sims);
+    double put_se = std::sqrt(put_var_MC / num_sims);
+
     // 1.96= Z-value for 95% Confidence
-    double call_ci_low = call_seq - 1.96 * call_se * Discount;
-    double call_ci_high = call_seq + 1.96 * call_se * Discount;
-    double put_ci_low = put_seq - 1.96 * put_se * Discount;
-    double put_ci_high = put_seq + 1.96 * put_se * Discount;
+    double call_ci_low = call_seq - 1.96 * call_se;
+    double call_ci_high = call_seq + 1.96 * call_se;
+    double put_ci_low = put_seq - 1.96 * put_se;
+    double put_ci_high = put_seq + 1.96 * put_se;
 
     // Statistics printing
-    std::cout << "Call price    :" << call_seq << std::endl;
-    std::cout << "Standar error :" << call_se << std::endl;
-    std::cout << "95% CI        :[" << call_ci_low << ", " << call_ci_high << " ]" << std::endl;
-    std::cout << "Put price     :" << put_seq << std::endl;
-    std::cout << "Standar error :" << put_se << std::endl;
-    std::cout << "95% CI        :[" << put_ci_low << ", " << put_ci_high << " ]" << std::endl;
-
-    double X_mean = call_sum / num_sims;
-    double Y_mean = put_sum / num_sims;
+    std::cout << "Call price        :" << call_seq << std::endl;
+    std::cout << "Standard error    :" << call_se << std::endl;
+    std::cout << "95% CI            :[" << call_ci_low << ", " << call_ci_high << " ]" << std::endl;
+    std::cout << "Put price         :" << put_seq << std::endl;
+    std::cout << "Standard error    :" << put_se << std::endl;
+    std::cout << "95% CI            :[" << put_ci_low << ", " << put_ci_high << " ]" << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+    //beta calculation
+    double X_mean = call_seq;           // call seq already discounted
+    double Y_mean = Y_sum / num_sims;   //discounted ST mean
     double cov_XY = (cross_sum / num_sims) - X_mean * Y_mean;
-    double var_Y = (st_sq_sum / num_sims) - Y_mean * Y_mean;
+    double var_Y = (Y_sq_sum / num_sims) - Y_mean * Y_mean;
     double beta = cov_XY / var_Y;
+    
+    //control variate
+    double expected_Y = S ;                                     // E[e^{-rT} S_T] = S , risk-neutral measure.
+    double call_cv = X_mean + beta * (expected_Y - Y_mean);     // new price
+    std::cout << "CV new price              :" << call_cv << std::endl;
+
+    //CV variace
+    double var_CV = call_var_MC - (2 * beta * cov_XY)+ (beta * beta * var_Y);
+    double se_cv = std::sqrt(var_CV / num_sims);
+    double reduction = 1.0 - (var_CV / call_var_MC);
+
+    std::cout << "CV Standard error         :" << se_cv << std::endl;
+    std::cout << "MC var                    :" << call_var_MC << std::endl;
+    std::cout << "Varience Reduction        :" << reduction << std::endl;
 
 
 }
@@ -173,10 +193,11 @@ int main()
     double speedup = t_seq / t_par;
     double efficiency = (speedup / threads) * 100;
 
-    //std::cout << "Call: " << call_seq << "\nPut: " << put_seq << std::endl;
+ 
+    std::cout << "--------------------------------------------------------------" << std::endl;
     std::cout << "Call Parallel: " << call_paral << "\nPut Parallel: " << put_paral << std::endl;
     std::cout << "Speedup: " << speedup << "x\nEfficiency: " << efficiency << "%" << std::endl;
-
+    std::cout << "--------------------------------------------------------------" << std::endl;
     //black_schole benchmark
     double BS_call = black_scholes_call(S, K, r, sigma, T);
     double abs_error_call = std::abs(call_seq - BS_call);
@@ -186,9 +207,11 @@ int main()
     double abs_error_put = std::abs(put_seq - BS_put);
     double rel_error_put = abs_error_put / BS_put;
 
+    std::cout << "--------------------------------------------------------------" << std::endl;
     std::cout << "Black-Scholes call:" << BS_call << std::endl;
     std::cout << "Absolute error    :" << abs_error_call << std::endl;
     std::cout << "Relative error    :" << rel_error_call << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
     std::cout << "Black-Scholes puts:" << BS_put << std::endl;
     std::cout << "Absolute error    :" << abs_error_put << std::endl;
     std::cout << "Relative error    :" << rel_error_put << std::endl;
