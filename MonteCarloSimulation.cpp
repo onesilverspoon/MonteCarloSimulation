@@ -33,6 +33,10 @@ void monte_carlo_call_put_price(int num_sims, double S, double K, double r, doub
     double put_sq_sum = 0.0;
     double call_payoff1, call_payoff2;
     double put_payoff1, put_payoff2;
+    double st_sum = 0.0;
+    double st_sq_sum = 0.0;
+    double cross_sum = 0.0;
+
     double Discount = std::exp(-r * T);
     int half_sims = num_sims / 2;
 
@@ -55,6 +59,11 @@ void monte_carlo_call_put_price(int num_sims, double S, double K, double r, doub
 
         put_sum += put_payoff1 + put_payoff2;
         put_sq_sum += put_payoff1 * put_payoff1 + put_payoff2 * put_payoff2;
+
+        st_sum += Op_price_cur1 + Op_price_cur2;
+        st_sq_sum += Op_price_cur1 * Op_price_cur1 + Op_price_cur2 * Op_price_cur2;
+        cross_sum += call_payoff1 * Op_price_cur1 + call_payoff2 * Op_price_cur2;
+
 
     }
     call_seq = (call_sum / static_cast<double>(num_sims)) * Discount;
@@ -86,6 +95,12 @@ void monte_carlo_call_put_price(int num_sims, double S, double K, double r, doub
     std::cout << "Put price     :" << put_seq << std::endl;
     std::cout << "Standar error :" << put_se << std::endl;
     std::cout << "95% CI        :[" << put_ci_low << ", " << put_ci_high << " ]" << std::endl;
+
+    double X_mean = call_sum / num_sims;
+    double Y_mean = put_sum / num_sims;
+    double cov_XY = (cross_sum / num_sims) - X_mean * Y_mean;
+    double var_Y = (st_sq_sum / num_sims) - Y_mean * Y_mean;
+    double beta = cov_XY / var_Y;
 
 
 }
