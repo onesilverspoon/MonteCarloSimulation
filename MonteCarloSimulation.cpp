@@ -13,6 +13,10 @@ void monte_carlo_call_put_price(int num_sims, double Option_price, double Strike
     double Vol_sq = sigma * std::sqrt(Time_till_exp);
     double call_sum = 0.0;
     double put_sum = 0.0;
+    double call_sq_sum = 0.0;
+    double put_sq_sum = 0.0;
+    double call_payoff1, call_payoff2;
+    double put_payoff1, put_payoff2;
     double Discount = std::exp(-risk_free_per * Time_till_exp);
     int half_sims = num_sims / 2;
 
@@ -24,14 +28,49 @@ void monte_carlo_call_put_price(int num_sims, double Option_price, double Strike
         double gauss_bm_antithetic = -gauss_bm;
         Op_price_cur1 = Option_price * std::exp(Drift + Vol_sq * gauss_bm);
         Op_price_cur2 = Option_price * std::exp(Drift + Vol_sq * gauss_bm_antithetic);
-        call_sum += std::max(Op_price_cur1 - Strike_price, 0.0);
-        call_sum += std::max(Op_price_cur2 - Strike_price, 0.0);
-        put_sum += std::max(Strike_price - Op_price_cur1, 0.0);
-        put_sum += std::max(Strike_price - Op_price_cur2, 0.0);
+        call_payoff1 = std::max(Op_price_cur1 - Strike_price, 0.0);
+        call_payoff2 = std::max(Op_price_cur2 - Strike_price, 0.0);
+
+        call_sum += call_payoff1 + call_payoff2;
+        call_sq_sum += call_payoff1 * call_payoff1 + call_payoff2 * call_payoff2;
+
+        put_payoff1 = std::max(Strike_price - Op_price_cur1, 0.0);
+        put_payoff2 = std::max(Strike_price - Op_price_cur2, 0.0);
+
+        put_sum += put_payoff1 + put_payoff2;
+        put_sq_sum += put_payoff1 * put_payoff1 + put_payoff2 * put_payoff2;
 
     }
     call_seq = (call_sum / static_cast<double>(num_sims)) * Discount;
     put_seq = (put_sum / static_cast<double>(num_sims)) * Discount;
+
+    //mean calculation
+    double call_mean = call_sum / num_sims;
+    double put_mean = put_sum / num_sims;
+    //var calculation
+    double call_var = (call_sq_sum / num_sims - call_mean * call_mean);
+    double put_var = (put_sq_sum / num_sims - put_mean * put_mean);
+    //standar error
+    double call_se = std::sqrt(call_var / num_sims);
+    double put_se = std::sqrt(put_var / num_sims);
+        
+    call_seq = call_mean * Discount;
+    put_seq = put_mean * Discount;
+
+    // 1.96= Z-value for 95% Confidence
+    double call_ci_low = call_seq - 1.96 * call_se * Discount;
+    double call_ci_high = call_seq + 1.96 * call_se * Discount;
+    double put_ci_low = put_seq - 1.96 * put_se * Discount;
+    double put_ci_high = put_seq + 1.96 * put_se * Discount;
+
+    // Statistics printing
+    std::cout << "Call price    :" << call_seq << std::endl;
+    std::cout << "Standar error :" << call_se << std::endl;
+    std::cout << "95% CI        :[" << call_ci_low << ", " << call_ci_high << " ]" << std::endl;
+    std::cout << "Put price     :" << put_seq << std::endl;
+    std::cout << "Standar error :" << put_se << std::endl;
+    std::cout << "95% CI        :[" << put_ci_low << ", " << put_ci_high << " ]" << std::endl;
+
 
 }
 
@@ -103,7 +142,7 @@ int main()
     double speedup = t_seq / t_par;
     double efficiency = (speedup / threads) * 100;
 
-    std::cout << "Call: " << call_seq << "\nPut: " << put_seq << std::endl;
+    //std::cout << "Call: " << call_seq << "\nPut: " << put_seq << std::endl;
     std::cout << "Call Parallel: " << call_paral << "\nPut Parallel: " << put_paral << std::endl;
     std::cout << "Speedup: " << speedup << "x\nEfficiency: " << efficiency << "%" << std::endl;
 
