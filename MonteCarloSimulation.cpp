@@ -6,6 +6,15 @@
 #include <random>
 #include <omp.h>
 
+struct Monte_carlo_results {
+    double call;
+    double put;
+    double varience;
+    double ci_low;
+    double ci_high;
+    double str_error;
+};
+
 double norm_cdf(double x) {
     return 0.5 * std::erfc(-x / std::sqrt(2));
 }
