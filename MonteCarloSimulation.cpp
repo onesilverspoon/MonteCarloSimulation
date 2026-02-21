@@ -33,7 +33,7 @@ double black_scholes_put(double S, double K, double r, double sigma, double T) {
 
 void monte_carlo_call_put_price(int num_sims, double S, double K, double r, double sigma, double T, std::mt19937& gen, double& call_seq, double& put_seq) {
     double Drift = T * (r - 0.5 * sigma * sigma);
-    double Vol_sq = sigma * std::sqrt(T);
+    double Vol_sqrt_T = sigma * std::sqrt(T);
     double Discount = std::exp(-r * T);
     int half_sims = num_sims / 2;
 
@@ -54,8 +54,8 @@ void monte_carlo_call_put_price(int num_sims, double S, double K, double r, doub
     for (int i = 0; i < half_sims; i++) {
         double gauss_bm = d(gen);
         double gauss_bm_antithetic = -gauss_bm;
-        double ST1 = S * std::exp(Drift + Vol_sq * gauss_bm);
-        double ST2 = S * std::exp(Drift + Vol_sq * gauss_bm_antithetic);
+        double ST1 = S * std::exp(Drift + Vol_sqrt_T * gauss_bm);
+        double ST2 = S * std::exp(Drift + Vol_sqrt_T * gauss_bm_antithetic);
 
         double call_payoff1 = std::max(ST1 - K, 0.0);
         double call_payoff2 = std::max(ST2 - K, 0.0);
@@ -123,7 +123,7 @@ void monte_carlo_call_put_price(int num_sims, double S, double K, double r, doub
     std::cout << "CV new price              :" << call_cv << std::endl;
 
     //CV variace
-    double var_CV = call_var_MC - (2 * beta * cov_XY)+ (beta * beta * var_Y);
+    double var_CV = call_var_MC - beta * beta * var_Y;
     double se_cv = std::sqrt(var_CV / num_sims);
     double reduction = 1.0 - (var_CV / call_var_MC);
 
@@ -131,12 +131,18 @@ void monte_carlo_call_put_price(int num_sims, double S, double K, double r, doub
     std::cout << "MC var                    :" << call_var_MC << std::endl;
     std::cout << "Varience Reduction        :" << reduction << std::endl;
 
+    Monte_carlo_results result;
+    result.call = call_seq;
+    result.put = put_seq;
+    result.varience = call_var_MC;
+    result.str_error = call_se;
+
 
 }
 
 void monte_carlo_call_put_price_paral(int num_sims, double S, double K, double r, double sigma, double T, double& call_paral, double& put_paral) {
     double Drift = T * (r - 0.5 * sigma * sigma);
-    double Vol_sq = sigma * std::sqrt(T);
+    double Vol_sqrt_T = sigma * std::sqrt(T);
     double Discount = std::exp(-r * T);
     double call_sum = 0.0;
     double put_sum = 0.0;
@@ -155,8 +161,8 @@ void monte_carlo_call_put_price_paral(int num_sims, double S, double K, double r
         for (int i = 0; i < half_sims; i++) {
             double gauss_bm = d(gen);
             double gauss_bm_antithetic = -gauss_bm;
-            Op_price_cur1 = S * std::exp(Drift + Vol_sq * gauss_bm);
-            Op_price_cur2 = S * std::exp(Drift + Vol_sq * gauss_bm_antithetic);
+            Op_price_cur1 = S * std::exp(Drift + Vol_sqrt_T * gauss_bm);
+            Op_price_cur2 = S * std::exp(Drift + Vol_sqrt_T * gauss_bm_antithetic);
             call_sum += std::max(Op_price_cur1 - K, 0.0);
             call_sum += std::max(Op_price_cur2 - K, 0.0);
             put_sum += std::max(K - Op_price_cur1, 0.0);
