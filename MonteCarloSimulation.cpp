@@ -183,6 +183,12 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
 
     double call_vega = Discount * (vega_call_sum / num_sims);
     double put_vega = Discount * (vega_put_sum / num_sims);
+
+    //control variate Delta
+    double delta_Y_MC = Discount * (Y_sum / num_sims) / S;
+    double delta_Y_exact = 1.0;
+    double call_delta_cv = call_delta + beta * (delta_Y_exact - delta_Y_MC);
+    double put_delta_cv = put_delta + beta * (delta_Y_exact - delta_Y_MC);
     
     //control variate
     double expected_Y = S ;                                     // E[e^{-rT} S_T] = S , risk-neutral measure.
@@ -223,6 +229,8 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     result.put_gamma = put_gamma;
     result.call_vega = call_vega;
     result.put_vega = put_vega;
+    result.call_delta_cv = call_delta_cv;
+    result.put_delta_cv = put_delta_cv;
     result.put_cv = put_cv;
     result.put_cv_variance = var_put_CV;
     result.put_cv_std_error = put_se_cv;
@@ -343,6 +351,11 @@ int main()
     std::cout << "--------------------------------------------------------------" << std::endl;
     std::cout << "Greeks" << std::endl;
     std::cout << "Beta              :" << res.beta << std::endl;
+    std::cout << "Call Delta        :" << res.call_delta << std::endl;
+    std::cout << "Puts Delta        :" << res.put_delta << std::endl;
+    std::cout << "Call Delta Adj.   :" << res.call_delta_cv << std::endl;
+    std::cout << "Puts Delta Adj.   :" << res.put_delta_cv << std::endl;
+
 
     return 0;
 }
