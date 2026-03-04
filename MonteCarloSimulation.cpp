@@ -1,3 +1,4 @@
+#define _USE_MATH_DEFINES
 
 #include <iostream>
 #include <algorithm>
@@ -42,6 +43,10 @@ struct Monte_carlo_results {
     //Greeks CV adjusted
     double call_delta_cv;
     double put_delta_cv;
+    double call_gamma_cv;
+    double put_gamma_cv;
+    double call_vega_cv;
+    double put_vega_cv;
 
     
 };
@@ -61,6 +66,16 @@ double black_scholes_put(double S, double K, double r, double sigma, double T) {
     return  K * std::exp(-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1);
 }
 
+//gamma reallity check
+double normal_pdf(double x) {
+    return std::exp(-0.5 * x * x) / std::sqrt(2 * M_PI);
+}
+
+double black_scholes_gamma(double S, double K, double r, double sigma, double T) {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
+    return normal_pdf(d1) / (S * sigma * std::sqrt(T));
+}
+
 
 Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K, double r, double sigma, double T, std::mt19937& gen) {
     double Drift = T * (r - 0.5 * sigma * sigma);
@@ -77,6 +92,8 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double put_sq_sum = 0.0;
 
     //beta,delta,gamma,vega, CV accumulators
+    double X_sum = 0.0;
+    double X_put_sum = 0.0;
     double Y_sum = 0.0;
     double Y_sq_sum = 0.0;
     double cross_sum = 0.0;
@@ -87,15 +104,21 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double vega_call_sum = 0.0;
     double vega_put_sum = 0.0;
     double cross_sum_put = 0.0;
+    double cross_sum_gamma = 0.0;
+    double cross_sum_gamma_put = 0.0;
+    double cross_sum_vega = 0.0;
+    double cross_sum_vega_put = 0.0;
+    double stock_vega_sum = 0.0;
 
 
     for (int i = 0; i < half_sims; i++) {
         double gauss_bm = d(gen);
         double gauss_bm_antithetic = -gauss_bm;
-        double ST1 = S * std::exp(Drift + Vol_sqrt_T * gauss_bm);
-        double ST2 = S * std::exp(Drift + Vol_sqrt_T * gauss_bm_antithetic);
-        double Z1 = gauss_bm;
-        double Z2 = gauss_bm_antithetic;
+        double base = S * std::exp(Drift);
+        double exp_term = std::exp(Vol_sqrt_T * gauss_bm);
+
+        double ST1 = base * exp_term;
+        double ST2 = base / exp_term;
 
         double call_payoff1 = std::max(ST1 - K, 0.0);
         double call_payoff2 = std::max(ST2 - K, 0.0);
@@ -105,24 +128,25 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
         //Delta
         if (ST1 > K)delta_call_sum += ST1 / S;
         if (ST2 > K)delta_call_sum += ST2 / S;
-        if (ST1 < K)delta_put_sum -= ST1 / S;
-        if (ST2 < K)delta_put_sum -= ST2 / S;
+        if (ST1 < K) delta_put_sum += (-ST1 / S);
+        if (ST2 < K) delta_put_sum += (-ST2 / S);
 
-        //Gamma wrong impementation dissabled for now
-        /*
-        double common1 = (Z1 / (S * sigma * std::sqrt(T)));
-        double common2 = (Z2 / (S * sigma * std::sqrt(T)));
-        gamma_call_sum += std::max(ST1 - K, 0.0) * common1;
-        gamma_call_sum += std::max(ST2 - K, 0.0) * common2;
-        gamma_put_sum += std::max(K - ST1, 0.0) * common1;
-        gamma_put_sum += std::max(K - ST2, 0.0) * common2;
-        */
+        //Gamma (likelihood ratio method)
+        double L1 = (std::log(ST1 / S) - Drift) / Vol_sqrt_T;
+        double L2 = (std::log(ST2 / S) - Drift) / Vol_sqrt_T;
+        double gamma_weight1 = (gauss_bm * gauss_bm - 1.0) / (S * S * sigma * sigma * T);
+        double gamma_weight2 = (gauss_bm_antithetic * gauss_bm_antithetic - 1.0) / (S * S * sigma * sigma * T);
+        gamma_call_sum += call_payoff1 * gamma_weight1 + call_payoff2 * gamma_weight2;
+        gamma_put_sum += put_payoff1 * gamma_weight1 + put_payoff2 * gamma_weight2;
 
-        //Vega
-        vega_call_sum += std::max(ST1 - K, 0.0) * (Z1 * std::sqrt(T));
-        vega_call_sum += std::max(ST2 - K, 0.0) * (Z2 * std::sqrt(T));
-        vega_put_sum += std::max(K - ST1, 0.0) * (Z1 * std::sqrt(T));
-        vega_put_sum += std::max(K - ST2, 0.0) * (Z2 * std::sqrt(T));
+        //Vega (likelihood ratio method)
+        double vega_weight1_call = call_payoff1 * ((L1 * L1 - 1.0) / sigma - L1 * std::sqrt(T));
+        double vega_weight2_call = call_payoff2 * ((L2 * L2 - 1.0) / sigma - L2 * std::sqrt(T));
+        double vega_weight1_put = put_payoff1 * (L1 * L1 / sigma - L1 * std::sqrt(T) - 1.0 / sigma);
+        double vega_weight2_put = put_payoff2 * (L2 * L2 / sigma - L2 * std::sqrt(T) - 1.0 / sigma);
+
+        vega_call_sum += vega_weight1_call + vega_weight2_call;
+        vega_put_sum += vega_weight1_put + vega_weight2_put;
 
         //call stats
         call_sum += call_payoff1 + call_payoff2;
@@ -144,6 +168,34 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
         double discounted_put1 = put_payoff1 * Discount;
         double discounted_put2 = put_payoff2 * Discount;
         cross_sum_put += discounted_put1 * discounted_ST1 + discounted_put2 * discounted_ST2;
+
+        //Gamma CV
+        double discounted_gamma1 = call_payoff1 * gamma_weight1 * Discount;
+        double discounted_gamma2 = call_payoff2 * gamma_weight2 * Discount;
+        cross_sum_gamma += discounted_gamma1 * discounted_ST1 + discounted_gamma2 * discounted_ST2;
+
+        double discounted_gamma_put1 = put_payoff1 * gamma_weight1 * Discount;
+        double discounted_gamma_put2 = put_payoff2 * gamma_weight2 * Discount;
+        cross_sum_gamma_put += discounted_gamma_put1 * discounted_ST1 + discounted_gamma_put2 * discounted_ST2;
+
+        //Vega CV
+        double discounted_vega1 = call_payoff1 * vega_weight1_call * Discount;
+        double discounted_vega2 = call_payoff2 * vega_weight2_call * Discount;
+        cross_sum_vega += discounted_vega1 * discounted_ST1 + discounted_vega2 * discounted_ST2;
+
+        double discounted_vega_put1 = put_payoff1 * vega_weight1_put * Discount;
+        double discounted_vega_put2 = put_payoff2 * vega_weight2_put * Discount;
+        cross_sum_vega_put += discounted_vega_put1 * discounted_ST1 + discounted_vega_put2 * discounted_ST2;
+
+        X_sum += discounted_call1 + discounted_call2;
+        X_put_sum += discounted_put1 + discounted_put2;
+
+        //stock vega
+        double stock_vega1 = ST1 * (gauss_bm * std::sqrt(T) - sigma * T);
+        double stock_vega2 = ST2 * (gauss_bm_antithetic * std::sqrt(T) - sigma * T);
+
+        stock_vega_sum += stock_vega1 + stock_vega2;
+
     }
     //mean calculation
     double call_mean = call_sum / num_sims;
@@ -153,7 +205,7 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double put_seq = put_mean * Discount;
 
     //var calculation (undiscounted)
-    double call_var = (call_sq_sum / num_sims) - call_mean * call_mean;
+    double call_var = (call_sq_sum - num_sims * call_mean * call_mean) / (num_sims - 1);
     double put_var = (put_sq_sum / num_sims) - put_mean * put_mean;
     //var Monte Carlo discounted
     double call_var_MC = call_var * (Discount * Discount);
@@ -170,7 +222,7 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double put_ci_high = put_seq + 1.96 * put_se;
 
     //beta calculation
-    double X_mean = (call_sum / num_sims) * Discount;           // not already discounted
+    double X_mean = (X_sum / num_sims);                         
     double Y_mean = Y_sum / num_sims;                           // discounted ST mean
     double cov_XY = (cross_sum / num_sims) - X_mean * Y_mean;   // already discounted
     double var_Y = (Y_sq_sum / num_sims) - Y_mean * Y_mean;
@@ -185,10 +237,13 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double put_vega = Discount * (vega_put_sum / num_sims);
 
     //control variate Delta
-    double delta_Y_MC = Discount * (Y_sum / num_sims) / S;
-    double delta_Y_exact = 1.0;
-    double call_delta_cv = call_delta + beta * (delta_Y_exact - delta_Y_MC);
-    double put_delta_cv = put_delta + beta * (delta_Y_exact - delta_Y_MC);
+    // Delta CV Fix: Replace the current logic with this
+    double delta_Y_MC = (Y_sum / num_sims) / S; // MC estimate of d(discounted S)/dS
+    double delta_Y_exact = 1.0;                 // Theoretical d(S)/dS = 1
+
+    // Use 1.0 as the coefficient for Delta because the sensitivity is 1:1
+    double call_delta_cv = call_delta + (delta_Y_exact - delta_Y_MC);
+    double put_delta_cv = put_delta + (delta_Y_exact - delta_Y_MC);
     
     //control variate
     double expected_Y = S ;                                     // E[e^{-rT} S_T] = S , risk-neutral measure.
@@ -198,14 +253,28 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double var_cv = call_var_MC + beta * beta * var_Y - 2.0 * beta * cov_XY;
     double se_cv = std::sqrt(var_cv / num_sims);
     double reduction = 1.0 - (var_cv / call_var_MC);
-    double X_put_mean = (put_sum / num_sims) * Discount;
+    double X_put_mean = X_put_sum / num_sims;
     double cov_put_Y = (cross_sum_put / num_sims) - X_put_mean * Y_mean;
     double beta_put = (var_Y > 1e-12) ? cov_put_Y / var_Y : 0.0;
     double put_cv = X_put_mean + beta_put * (expected_Y - Y_mean);
     double var_put_CV = put_var_MC + beta_put * beta_put * var_Y - 2.0 * beta_put * cov_put_Y;
     double put_se_cv = std::sqrt(var_put_CV / num_sims);
 
+    //Gamma CV
+    double X_gamma_mean = call_gamma;
+    double cov_gamma_Y = (cross_sum_gamma / num_sims) - X_gamma_mean * Y_mean;
+    double beta_gamma = (var_Y > 1e-12) ? (cov_gamma_Y / var_Y) : 0.0;
+    double call_gamma_cv = call_gamma + beta_gamma * (expected_Y - Y_mean);
+
+    double cov_gamma_Y_put = (cross_sum_gamma_put / num_sims) - (put_gamma * Y_mean);
+    double beta_gamma_put = (var_Y > 1e-12) ? (cov_gamma_Y_put / var_Y) : 0.0;
+    double put_gamma_cv = put_gamma + beta_gamma_put * (expected_Y - Y_mean);
     
+    //Vega CV
+    double stock_vega_MC = Discount * (stock_vega_sum / num_sims);  
+    // Adjust Option Vega by subtracting the Stock's Vega noise
+    double call_vega_cv = call_vega - stock_vega_MC;
+    double put_vega_cv = put_vega - stock_vega_MC;
 
     Monte_carlo_results result;
     result.call = call_seq;
@@ -234,6 +303,10 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     result.put_cv = put_cv;
     result.put_cv_variance = var_put_CV;
     result.put_cv_std_error = put_se_cv;
+    result.call_gamma_cv = call_gamma_cv;
+    result.put_gamma_cv = put_gamma_cv;
+    result.call_vega_cv = call_vega_cv;
+    result.put_vega_cv = put_vega_cv;
 
     return result;
 
@@ -355,6 +428,16 @@ int main()
     std::cout << "Puts Delta        :" << res.put_delta << std::endl;
     std::cout << "Call Delta Adj.   :" << res.call_delta_cv << std::endl;
     std::cout << "Puts Delta Adj.   :" << res.put_delta_cv << std::endl;
+    std::cout << "Gamma call        :" << res.call_gamma << std::endl;
+    std::cout << "Gamma puts        :" << res.put_gamma << std::endl;
+    std::cout << "Reallity chech gamma-----------------------------------------" << std::endl;
+    double bs_gamma = black_scholes_gamma(S, K, r, sigma, T);
+    std::cout << "Black-scholes gamma:" << bs_gamma << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+    std::cout << "Call Gamma Adj.   :" << res.call_gamma_cv << std::endl;
+    std::cout << "Puts Gamma Adj.   :" << res.put_gamma_cv << std::endl;
+    std::cout << "Call Vega Adj.    :" << res.call_vega_cv << std::endl;
+    std::cout << "Puts Vega Adj.    :" << res.put_vega_cv << std::endl;
 
 
     return 0;
