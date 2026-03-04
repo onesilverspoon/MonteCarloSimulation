@@ -105,22 +105,24 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
         //Delta
         if (ST1 > K)delta_call_sum += ST1 / S;
         if (ST2 > K)delta_call_sum += ST2 / S;
-        if (ST1 < K)delta_call_sum -= ST1 / S;
-        if (ST2 < K)delta_call_sum -= ST2 / S;
+        if (ST1 < K)delta_put_sum -= ST1 / S;
+        if (ST2 < K)delta_put_sum -= ST2 / S;
 
-        //Gamma
+        //Gamma wrong impementation dissabled for now
+        /*
         double common1 = (Z1 / (S * sigma * std::sqrt(T)));
         double common2 = (Z2 / (S * sigma * std::sqrt(T)));
         gamma_call_sum += std::max(ST1 - K, 0.0) * common1;
         gamma_call_sum += std::max(ST2 - K, 0.0) * common2;
         gamma_put_sum += std::max(K - ST1, 0.0) * common1;
         gamma_put_sum += std::max(K - ST2, 0.0) * common2;
+        */
 
         //Vega
-        vega_call_sum += std::max(ST1 - K, 0.0) * (Z1 * std::sqrt(T) - sigma * T);
-        vega_call_sum += std::max(ST2 - K, 0.0) * (Z2 * std::sqrt(T) - sigma * T);
-        vega_put_sum += std::max(K - ST1, 0.0) * (Z1 * std::sqrt(T) - sigma * T);
-        vega_put_sum += std::max(K - ST2, 0.0) * (Z2 * std::sqrt(T) - sigma * T);
+        vega_call_sum += std::max(ST1 - K, 0.0) * (Z1 * std::sqrt(T));
+        vega_call_sum += std::max(ST2 - K, 0.0) * (Z2 * std::sqrt(T));
+        vega_put_sum += std::max(K - ST1, 0.0) * (Z1 * std::sqrt(T));
+        vega_put_sum += std::max(K - ST2, 0.0) * (Z2 * std::sqrt(T));
 
         //call stats
         call_sum += call_payoff1 + call_payoff2;
@@ -310,8 +312,8 @@ int main()
     std::cout << "CV Call Var       :" << res.call_cv_variance << std::endl;
     std::cout << "CV Call SE        :" << res.call_cv_std_error << std::endl;
     std::cout << "CV Puts           :" << res.put_cv << std::endl;
-    std::cout << "CV Puts Var       :" << res.call_cv_variance << std::endl;
-    std::cout << "CV Puts SE        :" << res.call_cv_std_error << std::endl;
+    std::cout << "CV Puts Var       :" << res.put_cv_variance << std::endl;
+    std::cout << "CV Puts SE        :" << res.put_cv_std_error << std::endl;
     std::cout << "Var Red           :" << res.variance_reduction << std::endl;
 
  
