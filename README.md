@@ -103,9 +103,3 @@ where (\beta = \frac{\mathrm{Cov}(X,Y)}{\mathrm{Var}(Y)}). The code computes (\b
 
 ## License
 ??
-
-*If you want, I can also:*
-
-* produce a short `CONTRIBUTING.md` and `ISSUE_TEMPLATE.md` for the repo
-* create a GitHub Actions workflow that runs a small smoke test (e.g., compile + run with `num_sims = 10000`) to ensure the repo stays buildable
-* create a `Makefile` or CMakeLists for easier builds
