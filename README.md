@@ -1,7 +1,7 @@
 
 ## Project title
 
-Monte Carlo European Call & Put Pricer with Variance Reduction, Greeks and OpenMP Parallelism
+Monte Carlo Call & Put Pricer with Variance Reduction, Greeks and OpenMP Parallelism
 
 ## Short description
 
