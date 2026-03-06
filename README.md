@@ -1,5 +1,7 @@
+## Disclaimer! 
+Both the project and the README file are under development and should be updated regularly. 
 
-## Project title
+## Monte Carlo Simulation
 
 Monte Carlo Call & Put Pricer with Variance Reduction, Greeks and OpenMP Parallelism
 
