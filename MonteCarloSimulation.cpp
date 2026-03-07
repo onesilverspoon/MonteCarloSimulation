@@ -99,14 +99,14 @@ double norm_cdf(double x) {
     return 0.5 * std::erfc(-x / std::sqrt(2));
 }
 
-double black_scholes_call(double S, double K, double r, double sigma, double T) {
-    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
-    double d2 = d1 - sigma * std::sqrt(T);
+double black_scholes_call(double S, double K, double r, double sigma, double T, double sqrt_T) {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * sqrt_T);
+    double d2 = d1 - sigma * sqrt_T;
     return S * norm_cdf(d1) - K * std::exp(-r * T) * norm_cdf(d2);
 }
-double black_scholes_put(double S, double K, double r, double sigma, double T) {
-    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
-    double d2 = d1 - sigma * std::sqrt(T);
+double black_scholes_put(double S, double K, double r, double sigma, double T, double sqrt_T) {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * sqrt_T);
+    double d2 = d1 - sigma * sqrt_T;
     return  K * std::exp(-r * T) * norm_cdf(-d2) - S * norm_cdf(-d1);
 }
 
@@ -115,15 +115,15 @@ double normal_pdf(double x) {
     return std::exp(-0.5 * x * x) / std::sqrt(2 * M_PI);
 }
 
-double black_scholes_gamma(double S, double K, double r, double sigma, double T) {
-    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * std::sqrt(T));
-    return normal_pdf(d1) / (S * sigma * std::sqrt(T));
+double black_scholes_gamma(double S, double K, double r, double sigma, double T ,double sqrt_T) {
+    double d1 = (std::log(S / K) + (r + 0.5 * sigma * sigma) * T) / (sigma * sqrt_T);
+    return normal_pdf(d1) / (S * sigma * sqrt_T);
 }
 
 
-Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K, double r, double sigma, double T, std::mt19937& gen) {
+Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K, double r, double sigma, double T,double sqrt_T, std::mt19937& gen) {
     double Drift = T * (r - 0.5 * sigma * sigma);
-    double Vol_sqrt_T = sigma * std::sqrt(T);
+    double Vol_sqrt_T = sigma * sqrt_T;
     double Discount = std::exp(-r * T);
     int half_sims = num_sims / 2;
     double base = S * std::exp(Drift);
@@ -184,10 +184,10 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
         gamma_put_sum += put_payoff1 * gamma_weight1 + put_payoff2 * gamma_weight2;
 
         //Vega (likelihood ratio method)
-        double vega_weight1_call = call_payoff1 * ((L1 * L1 - 1.0) / sigma - L1 * std::sqrt(T));
-        double vega_weight2_call = call_payoff2 * ((L2 * L2 - 1.0) / sigma - L2 * std::sqrt(T));
-        double vega_weight1_put = put_payoff1 * (L1 * L1 / sigma - L1 * std::sqrt(T) - 1.0 / sigma);
-        double vega_weight2_put = put_payoff2 * (L2 * L2 / sigma - L2 * std::sqrt(T) - 1.0 / sigma);
+        double vega_weight1_call = call_payoff1 * ((L1 * L1 - 1.0) / sigma - L1 * sqrt_T);
+        double vega_weight2_call = call_payoff2 * ((L2 * L2 - 1.0) / sigma - L2 * sqrt_T);
+        double vega_weight1_put = put_payoff1 * (L1 * L1 / sigma - L1 * sqrt_T - 1.0 / sigma);
+        double vega_weight2_put = put_payoff2 * (L2 * L2 / sigma - L2 * sqrt_T - 1.0 / sigma);
 
         vega_call_sum += vega_weight1_call + vega_weight2_call;
         vega_put_sum += vega_weight1_put + vega_weight2_put;
@@ -235,8 +235,8 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
         X_put_sum += discounted_put1 + discounted_put2;
 
         //stock vega
-        double stock_vega1 = ST1 * (gauss_bm * std::sqrt(T) - sigma * T);
-        double stock_vega2 = ST2 * (gauss_bm_antithetic * std::sqrt(T) - sigma * T);
+        double stock_vega1 = ST1 * (gauss_bm * sqrt_T - sigma * T);
+        double stock_vega2 = ST2 * (gauss_bm_antithetic * sqrt_T - sigma * T);
 
         stock_vega_sum += stock_vega1 + stock_vega2;
 
@@ -354,9 +354,9 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
 
 }
 
-Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double S, double K, double r, double sigma, double T) {
+Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double S, double K, double r, double sigma, double T, double sqrt_T) {
     double Drift = T * (r - 0.5 * sigma * sigma);
-    double Vol_sqrt_T = sigma * std::sqrt(T);
+    double Vol_sqrt_T = sigma * sqrt_T;
     double Discount = std::exp(-r * T);
     int half_sims = num_sims / 2;
     double base = S * std::exp(Drift);
@@ -420,10 +420,10 @@ Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double 
             gamma_put_sum += put_payoff1 * gamma_weight1 + put_payoff2 * gamma_weight2;                     //reduction
 
             //Vega (likelihood ratio method)
-            double vega_weight1_call = call_payoff1 * ((L1 * L1 - 1.0) / sigma - L1 * std::sqrt(T));
-            double vega_weight2_call = call_payoff2 * ((L2 * L2 - 1.0) / sigma - L2 * std::sqrt(T));
-            double vega_weight1_put = put_payoff1 * (L1 * L1 / sigma - L1 * std::sqrt(T) - 1.0 / sigma);
-            double vega_weight2_put = put_payoff2 * (L2 * L2 / sigma - L2 * std::sqrt(T) - 1.0 / sigma);
+            double vega_weight1_call = call_payoff1 * ((L1 * L1 - 1.0) / sigma - L1 * sqrt_T);
+            double vega_weight2_call = call_payoff2 * ((L2 * L2 - 1.0) / sigma - L2 * sqrt_T);
+            double vega_weight1_put = put_payoff1 * (L1 * L1 / sigma - L1 * sqrt_T - 1.0 / sigma);
+            double vega_weight2_put = put_payoff2 * (L2 * L2 / sigma - L2 * sqrt_T - 1.0 / sigma);
 
             vega_call_sum += vega_weight1_call + vega_weight2_call;                 //reduction
             vega_put_sum += vega_weight1_put + vega_weight2_put;                    //reduction
@@ -471,8 +471,8 @@ Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double 
             X_put_sum += discounted_put1 + discounted_put2;                                                        //reduction
 
             //stock vega
-            double stock_vega1 = ST1 * (gauss_bm * std::sqrt(T) - sigma * T);
-            double stock_vega2 = ST2 * (gauss_bm_antithetic * std::sqrt(T) - sigma * T);
+            double stock_vega1 = ST1 * (gauss_bm * sqrt_T - sigma * T);
+            double stock_vega2 = ST2 * (gauss_bm_antithetic * sqrt_T - sigma * T);
 
             stock_vega_sum += stock_vega1 + stock_vega2;                                                            //reduction
         }
@@ -599,16 +599,17 @@ int main()
     double r = 0.05;
     double sigma = 0.2;
     double T = 1.0; //in years
+    double sqrt_T = std::sqrt(T);
     std::mt19937 gen(42);
 
     //double call_seq, put_seq;
 
     double start_seq = omp_get_wtime();
-    Monte_carlo_results res = monte_carlo_call_put_price(num_sims, S, K, r, sigma, T, gen);
+    Monte_carlo_results res = monte_carlo_call_put_price(num_sims, S, K, r, sigma, T,sqrt_T , gen);
     double end_seq = omp_get_wtime();
 
     double start_par = omp_get_wtime();
-    Monte_carlo_Paral_results res_paral = monte_carlo_call_put_price_paral(num_sims, S, K, r, sigma, T);
+    Monte_carlo_Paral_results res_paral = monte_carlo_call_put_price_paral(num_sims, S, K, r, sigma, T, sqrt_T);
     double end_par = omp_get_wtime();
 
     double t_seq = end_seq - start_seq;
@@ -642,11 +643,11 @@ int main()
 
  
     //black_schole benchmark
-    double BS_call = black_scholes_call(S, K, r, sigma, T);
+    double BS_call = black_scholes_call(S, K, r, sigma, T, sqrt_T);
     double abs_error_call = std::abs(res.call - BS_call);
     double rel_error_call = abs_error_call / BS_call;
 
-    double BS_put = black_scholes_put(S, K, r, sigma, T);
+    double BS_put = black_scholes_put(S, K, r, sigma, T, sqrt_T);
     double abs_error_put = std::abs(res.put - BS_put);
     double rel_error_put = abs_error_put / BS_put;
 
@@ -669,7 +670,7 @@ int main()
     std::cout << "Gamma call        :" << res.call_gamma << std::endl;
     std::cout << "Gamma puts        :" << res.put_gamma << std::endl;
     std::cout << "Reallity chech gamma-----------------------------------------" << std::endl;
-    double bs_gamma = black_scholes_gamma(S, K, r, sigma, T);
+    double bs_gamma = black_scholes_gamma(S, K, r, sigma, T, sqrt_T);
     std::cout << "Black-scholes gamma:" << bs_gamma << std::endl;
     std::cout << "--------------------------------------------------------------" << std::endl;
     std::cout << "Call Gamma Adj.   :" << res.call_gamma_cv << std::endl;
