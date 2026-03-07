@@ -354,7 +354,7 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
 
 }
 
-void monte_carlo_call_put_price_paral(int num_sims, double S, double K, double r, double sigma, double T, double& call_paral, double& put_paral) {
+Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double S, double K, double r, double sigma, double T) {
     double Drift = T * (r - 0.5 * sigma * sigma);
     double Vol_sqrt_T = sigma * std::sqrt(T);
     double Discount = std::exp(-r * T);
@@ -407,7 +407,7 @@ int main()
     double end_seq = omp_get_wtime();
 
     double start_par = omp_get_wtime();
-    monte_carlo_call_put_price_paral(num_sims, S, K, r, sigma, T, call_paral, put_paral);
+    Monte_carlo_Paral_results res_paral = monte_carlo_call_put_price_paral(num_sims, S, K, r, sigma, T);
     double end_par = omp_get_wtime();
 
     double t_seq = end_seq - start_seq;
