@@ -390,8 +390,6 @@ Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double 
         std::seed_seq seq{ 1234, omp_get_thread_num() };
         std::mt19937  gen(seq);
         std::normal_distribution<double> d(0.0, 1.0);
-        double Op_price_cur1 = 0.0;
-        double Op_price_cur2 = 0.0;
 
 #pragma omp for reduction(+:delta_call_sum,delta_put_sum,gamma_call_sum, gamma_put_sum,vega_call_sum, vega_put_sum, call_sum, call_sq_sum, put_sum, put_sq_sum, Y_sum, Y_sq_sum, cross_sum, cross_sum_put, cross_sum_gamma, cross_sum_gamma_put, cross_sum_vega, cross_sum_vega_put, X_sum, X_put_sum, stock_vega_sum)
         for (int i = 0; i < half_sims; i++) {
@@ -604,7 +602,6 @@ int main()
     std::mt19937 gen(42);
 
     //double call_seq, put_seq;
-    double call_paral, put_paral;
 
     double start_seq = omp_get_wtime();
     Monte_carlo_results res = monte_carlo_call_put_price(num_sims, S, K, r, sigma, T, gen);
@@ -641,15 +638,9 @@ int main()
     std::cout << "CV Puts           :" << res.put_cv << std::endl;
     std::cout << "CV Puts Var       :" << res.put_cv_variance << std::endl;
     std::cout << "CV Puts SE        :" << res.put_cv_std_error << std::endl;
-    std::cout << "Var Red           :" << res.variance_reduction << std::endl;
+    std::cout << "Var Reduction     :" << res.variance_reduction << std::endl;
 
  
-    std::cout << "--------------------------------------------------------------" << std::endl;
-  /*  std::cout << "Call Parallel     :" << call_paral << std::endl;
-    std::cout << "Puts Parallel     :" << put_paral << std::endl;
-    std::cout << "Speedup           :" << speedup << std::endl;
-    std::cout << "Efficiency        :" << efficiency << "%" << std::endl;*/
-    std::cout << "--------------------------------------------------------------" << std::endl;
     //black_schole benchmark
     double BS_call = black_scholes_call(S, K, r, sigma, T);
     double abs_error_call = std::abs(res.call - BS_call);
@@ -658,6 +649,7 @@ int main()
     double BS_put = black_scholes_put(S, K, r, sigma, T);
     double abs_error_put = std::abs(res.put - BS_put);
     double rel_error_put = abs_error_put / BS_put;
+
 
     std::cout << "--------------------------------------------------------------" << std::endl;
     std::cout << "Black-Scholes call:" << BS_call << std::endl;
@@ -684,6 +676,46 @@ int main()
     std::cout << "Puts Gamma Adj.   :" << res.put_gamma_cv << std::endl;
     std::cout << "Call Vega Adj.    :" << res.call_vega_cv << std::endl;
     std::cout << "Puts Vega Adj.    :" << res.put_vega_cv << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+    std::cout << "Parallel execution:" << std::endl;
+    std::cout << "Call Paral price        :" << res_paral.call << std::endl;
+    std::cout << "Call Paral Var          :" << res_paral.call_variance << std::endl;
+    std::cout << "Call Paral SE           :" << res_paral.call_std_error << std::endl;
+    std::cout << "Call Paral CI           :[" << res_paral.call_ci_low << ", " << res_paral.call_ci_high << "]" << std::endl;
+    std::cout << "Puts Paral price        :" << res_paral.put << std::endl;
+    std::cout << "Puts Paral Var          :" << res_paral.put_variance << std::endl;
+    std::cout << "Puts Paral SE           :" << res_paral.put_std_error << std::endl;
+    std::cout << "Puts Paral CI           :[" << res_paral.put_ci_low << ", " << res_paral.put_ci_high << "]" << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+    std::cout << "CV Call Paral           :" << res_paral.call_cv << std::endl;
+    std::cout << "CV Call Paral Var       :" << res_paral.call_cv_variance << std::endl;
+    std::cout << "CV Call Paral SE        :" << res_paral.call_cv_std_error << std::endl;
+    std::cout << "CV Puts Paral           :" << res_paral.put_cv << std::endl;
+    std::cout << "CV Puts Paral Var       :" << res_paral.put_cv_variance << std::endl;
+    std::cout << "CV Puts Paral SE        :" << res_paral.put_cv_std_error << std::endl;
+    std::cout << "Var Paral Reduction     :" << res_paral.variance_reduction << std::endl;
+
+
+    std::cout << "--------------------------------------------------------------" << std::endl;
+    std::cout << "Greeks" << std::endl;
+    std::cout << "Beta              :" << res_paral.beta << std::endl;
+    std::cout << "Call Delta        :" << res_paral.call_delta << std::endl;
+    std::cout << "Puts Delta        :" << res_paral.put_delta << std::endl;
+    std::cout << "Call Delta Adj.   :" << res_paral.call_delta_cv << std::endl;
+    std::cout << "Puts Delta Adj.   :" << res_paral.put_delta_cv << std::endl;
+    std::cout << "Gamma call        :" << res_paral.call_gamma << std::endl;
+    std::cout << "Gamma puts        :" << res_paral.put_gamma << std::endl;
+    std::cout << "Reallity chech gamma-----------------------------------------" << std::endl;
+    std::cout << "Black-scholes gamma:" << bs_gamma << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+    std::cout << "Call Gamma Adj.   :" << res_paral.call_gamma_cv << std::endl;
+    std::cout << "Puts Gamma Adj.   :" << res_paral.put_gamma_cv << std::endl;
+    std::cout << "Call Vega Adj.    :" << res_paral.call_vega_cv << std::endl;
+    std::cout << "Puts Vega Adj.    :" << res_paral.put_vega_cv << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
+    std::cout << "Speedup           :" << speedup << std::endl;
+    std::cout << "Efficiency        :" << efficiency << "%" << std::endl;
+    std::cout << "--------------------------------------------------------------" << std::endl;
 
 
     return 0;
