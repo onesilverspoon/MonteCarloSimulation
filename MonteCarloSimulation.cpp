@@ -125,7 +125,8 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double Drift = T * (r - 0.5 * sigma * sigma);
     double Vol_sqrt_T = sigma * sqrt_T;
     double Discount = std::exp(-r * T);
-    int half_sims = num_sims / 2;
+    int half_paths = num_sims / 2;
+    int half_sims = 2 * half_paths;
     double base = S * std::exp(Drift);
 
     std::normal_distribution<double> d(0.0, 1.0);
@@ -358,7 +359,8 @@ Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double 
     double Drift = T * (r - 0.5 * sigma * sigma);
     double Vol_sqrt_T = sigma * sqrt_T;
     double Discount = std::exp(-r * T);
-    int half_sims = num_sims / 2;
+    int half_paths = num_sims / 2;
+    int half_sims = 2 * half_paths;
     double base = S * std::exp(Drift);
     //stats
     double call_sum = 0.0;
