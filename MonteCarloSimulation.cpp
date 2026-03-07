@@ -51,6 +51,50 @@ struct Monte_carlo_results {
     
 };
 
+struct Monte_carlo_Paral_results {
+    double call;
+    double put;
+
+    //Monte-Carlo stats
+    double call_variance;
+    double put_variance;
+    double call_std_error;
+    double put_std_error;
+
+    double call_ci_low;
+    double call_ci_high;
+    double put_ci_low;
+    double put_ci_high;
+
+    //Control Variance
+    double call_cv;
+    double put_cv;
+    double call_cv_variance;
+    double put_cv_variance;
+    double call_cv_std_error;
+    double put_cv_std_error;
+    double variance_reduction;
+
+    //Greeks
+    double beta;
+    double call_delta;
+    double put_delta;
+    double call_gamma;
+    double put_gamma;
+    double call_vega;
+    double put_vega;
+
+    //Greeks CV adjusted
+    double call_delta_cv;
+    double put_delta_cv;
+    double call_gamma_cv;
+    double put_gamma_cv;
+    double call_vega_cv;
+    double put_vega_cv;
+
+
+};
+
 double norm_cdf(double x) {
     return 0.5 * std::erfc(-x / std::sqrt(2));
 }
@@ -237,11 +281,9 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double put_vega = Discount * (vega_put_sum / num_sims);
 
     //control variate Delta
-    // Delta CV Fix: Replace the current logic with this
     double delta_Y_MC = (Y_sum / num_sims) / S; // MC estimate of d(discounted S)/dS
     double delta_Y_exact = 1.0;                 // Theoretical d(S)/dS = 1
 
-    // Use 1.0 as the coefficient for Delta because the sensitivity is 1:1
     double call_delta_cv = call_delta + (delta_Y_exact - delta_Y_MC);
     double put_delta_cv = put_delta + (delta_Y_exact - delta_Y_MC);
     
@@ -272,7 +314,7 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     
     //Vega CV
     double stock_vega_MC = Discount * (stock_vega_sum / num_sims);  
-    // Adjust Option Vega by subtracting the Stock's Vega noise
+    // Adjusted Option Vega by subtracting the Stock's Vega noise
     double call_vega_cv = call_vega - stock_vega_MC;
     double put_vega_cv = put_vega - stock_vega_MC;
 
