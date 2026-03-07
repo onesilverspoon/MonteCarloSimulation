@@ -126,6 +126,7 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double Vol_sqrt_T = sigma * std::sqrt(T);
     double Discount = std::exp(-r * T);
     int half_sims = num_sims / 2;
+    double base = S * std::exp(Drift);
 
     std::normal_distribution<double> d(0.0, 1.0);
 
@@ -158,7 +159,6 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     for (int i = 0; i < half_sims; i++) {
         double gauss_bm = d(gen);
         double gauss_bm_antithetic = -gauss_bm;
-        double base = S * std::exp(Drift);
         double exp_term = std::exp(Vol_sqrt_T * gauss_bm);
 
         double ST1 = base * exp_term;
@@ -359,6 +359,7 @@ Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double 
     double Vol_sqrt_T = sigma * std::sqrt(T);
     double Discount = std::exp(-r * T);
     int half_sims = num_sims / 2;
+    double base = S * std::exp(Drift);
     //stats
     double call_sum = 0.0;
     double put_sum = 0.0;
@@ -395,7 +396,6 @@ Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double 
         for (int i = 0; i < half_sims; i++) {
             double gauss_bm = d(gen);
             double gauss_bm_antithetic = -gauss_bm;
-            double base = S * std::exp(Drift);
             double exp_term = std::exp(Vol_sqrt_T * gauss_bm);
 
             double ST1 = base * exp_term;
