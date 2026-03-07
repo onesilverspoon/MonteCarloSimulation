@@ -303,7 +303,7 @@ Monte_carlo_results monte_carlo_call_put_price(int num_sims, double S, double K,
     double put_se_cv = std::sqrt(var_put_CV / num_sims);
 
     //Gamma CV
-    double X_gamma_mean = call_gamma;
+    double X_gamma_mean = (gamma_call_sum * Discount) / num_sims;
     double cov_gamma_Y = (cross_sum_gamma / num_sims) - X_gamma_mean * Y_mean;
     double beta_gamma = (var_Y > 1e-12) ? (cov_gamma_Y / var_Y) : 0.0;
     double call_gamma_cv = call_gamma + beta_gamma * (expected_Y - Y_mean);
@@ -387,8 +387,9 @@ Monte_carlo_Paral_results monte_carlo_call_put_price_paral(int num_sims, double 
 
 #pragma omp parallel 
     {
-        //gen random number from normal distribution N(0,1) with deterministic per-thread seeding using seed_seq    
-        std::seed_seq seq{ 1234, omp_get_thread_num() };
+        //gen random number from normal distribution N(0,1) with deterministic per-thread seeding using seed_seq
+        std::random_device rd;
+        std::seed_seq seq{ 1234, omp_get_thread_num(), (int)rd()};
         std::mt19937  gen(seq);
         std::normal_distribution<double> d(0.0, 1.0);
 
