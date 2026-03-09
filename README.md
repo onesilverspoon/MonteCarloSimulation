@@ -58,7 +58,7 @@ Run the program (defaults are in the `main()` function):
 
 The program prints (annotated):
 
-* `Call price` / `Puts price`: Monte Carlo estimate (discounted payoff mean)
+* `Call` / `Puts`: Monte Carlo estimate (discounted payoff mean)
 * `Call Var` / `Puts Var`: estimator variance (discounted)
 * `Call SE` / `Puts SE`: Monte Carlo standard error
 * `Call CI`: 95% confidence interval (uses z = 1.96)
