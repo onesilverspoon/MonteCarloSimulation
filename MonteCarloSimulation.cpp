@@ -4,8 +4,6 @@
 #include <iostream>
 #include <iomanip>
 #include <cmath>
-#include <random>
-#include <algorithm>
 #include <omp.h>
 
 int main()
