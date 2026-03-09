@@ -36,7 +36,7 @@ Save the code to a file (e.g. `monte_carlo.cpp`). Build with optimization and Op
 
 ```bash
 # Recommended compile (GCC / Clang)
-g++ -O3 -std=c++17 -fopenmp monte_carlo.cpp -o monte_carlo
+g++ -std=c++17 options.cpp MonteCarloSimulation.cpp -o MonteCarloSimulation -fopenmp -O3./MonteCarloSimulation
 
 # If you need to be explicit about math library (rarely necessary on modern toolchains):
 # g++ -O3 -std=c++17 -fopenmp monte_carlo.cpp -o monte_carlo -lm
