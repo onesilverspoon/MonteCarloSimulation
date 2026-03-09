@@ -1,6 +1,6 @@
 #define _USE_MATH_DEFINES
 
-#include "options.h"
+#include "include/monte_carlo/options.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
@@ -18,7 +18,6 @@ int main()
     double sigma = 0.2;         // Volatility
     double T = 1.0;             // Time to maturity (years)
     double sqrt_T = std::sqrt(T);
-    //std::mt19937 gen(42);
 
     double start_seq = omp_get_wtime();
     MonteCarloResult res = monte_carlo_sequential(num_sims, S, K, r, sigma, T,sqrt_T );

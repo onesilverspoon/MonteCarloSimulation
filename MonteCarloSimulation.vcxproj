@@ -146,10 +146,13 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="MonteCarloSimulation.cpp" />
-    <ClCompile Include="options.cpp" />
+    <ClCompile Include="src\options.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="options.h" />
+    <ClInclude Include="include\monte_carlo\options.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

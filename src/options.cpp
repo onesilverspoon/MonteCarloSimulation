@@ -1,6 +1,6 @@
 ﻿#define _USE_MATH_DEFINES
 
-#include "options.h"
+#include "../include/monte_carlo/options.h"
 #include <iostream>
 #include <cmath>
 #include <random>
@@ -122,18 +122,18 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
         double put_payoff1 = std::max(K - ST1, 0.0);
         double put_payoff2 = std::max(K - ST2, 0.0);
 
-        // ====================================================================
+        
         // Delta Calculation (Likelihood Ratio Method)
-        // ====================================================================
+        
         // Delta approximation: payoff / S when in-the-money
         if (ST1 > K) delta_call_sum += ST1 / S;
         if (ST2 > K) delta_call_sum += ST2 / S;
         if (ST1 < K) delta_put_sum += (-ST1 / S);
         if (ST2 < K) delta_put_sum += (-ST2 / S);
 
-        // ====================================================================
+        
         // Gamma Calculation (Likelihood Ratio Method)
-        // ====================================================================
+        
         // Gamma = d²C/dS² using likelihood ratio method
         // Weight: (Z² - 1) / (S² * σ² * T)
         double L1 = (std::log(ST1 / S) - Drift) / Vol_sqrt_T;
@@ -144,9 +144,8 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
         gamma_call_sum += call_payoff1 * gamma_weight1 + call_payoff2 * gamma_weight2;
         gamma_put_sum += put_payoff1 * gamma_weight1 + put_payoff2 * gamma_weight2;
 
-        // ====================================================================
         // Vega Calculation (Likelihood Ratio Method)
-        // ====================================================================
+        
         // Vega = dC/dσ using likelihood ratio method
         double vega_weight1_call = call_payoff1 * ((L1 * L1 - 1.0) / sigma - L1 * sqrt_T);
         double vega_weight2_call = call_payoff2 * ((L2 * L2 - 1.0) / sigma - L2 * sqrt_T);
@@ -156,17 +155,17 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
         vega_call_sum += vega_weight1_call + vega_weight2_call;
         vega_put_sum += vega_weight1_put + vega_weight2_put;
 
-        // ====================================================================
+        
         // Basic Statistics
-        // ====================================================================
+        
         call_sum += call_payoff1 + call_payoff2;
         call_sq_sum += call_payoff1 * call_payoff1 + call_payoff2 * call_payoff2;
         put_sum += put_payoff1 + put_payoff2;
         put_sq_sum += put_payoff1 * put_payoff1 + put_payoff2 * put_payoff2;
 
-        // ====================================================================
+        
         // Control Variate: Accumulate discounted values
-        // ====================================================================
+        
         double discounted_call1 = call_payoff1 * Discount;
         double discounted_call2 = call_payoff2 * Discount;
         double discounted_ST1 = ST1 * Discount;
@@ -206,9 +205,8 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
         stock_vega_sum += stock_vega1 + stock_vega2;
     }
 
-    // =========================================================================
-    // Post-Simulation: Compute Statistics
-    // =========================================================================
+    
+    // Compute Statistics
 
     // Basic price estimates
     double call_mean = call_sum / num_sims;
@@ -234,9 +232,7 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
     double put_ci_low = put_price - 1.96 * put_se;
     double put_ci_high = put_price + 1.96 * put_se;
 
-    // =========================================================================
     // Control Variate Calculations
-    // =========================================================================
 
     double X_mean = X_sum / num_sims;           // E[discounted payoff]
     double Y_mean = Y_sum / num_sims;           // E[discounted spot]
@@ -267,9 +263,7 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
     double put_cv_var = put_var_MC + beta_put * beta_put * var_Y - 2.0 * beta_put * cov_put_Y;
     double put_cv_se = std::sqrt(put_cv_var / num_sims);
 
-    // =========================================================================
     // Greeks Calculations
-    // =========================================================================
 
     double call_delta = Discount * (delta_call_sum / num_sims);
     double put_delta = Discount * (delta_put_sum / num_sims);
@@ -301,9 +295,8 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
     double call_vega_cv = call_vega - stock_vega_MC;
     double put_vega_cv = put_vega - stock_vega_MC;
 
-    // =========================================================================
-    // Assemble and Return Results
-    // =========================================================================
+
+    // Return Results
 
     MonteCarloResult result;
     result.call = call_price;
@@ -344,10 +337,8 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
 }
 
 MonteCarloResult monte_carlo_parallel(int num_sims, double S, double K, double r, double sigma, double T, double sqrt_T) {
-    /**
-     * Parallel version of Monte Carlo using OpenMP
-     * Same algorithm as sequential but parallelized with #pragma omp parallel for
-     */
+    //Parallel version of Monte Carlo using , Same algorithm as sequential but parallelized with #pragma omp parallel for
+     
 
     validate_option_parameters(num_sims, S, K, r, sigma, T);
 
