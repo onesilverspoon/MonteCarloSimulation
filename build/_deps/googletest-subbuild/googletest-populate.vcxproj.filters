@@ -1,0 +1,44 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="16.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-mkdir.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-download.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-update.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-patch.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-configure.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-build.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-install.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\6d80962e7624b86bf804748f1007c87d\googletest-populate-test.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\74592e59acfc5acb9e89e7c2be0521c2\googletest-populate-complete.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\882518d78c1a5f48271408bc887ad094\googletest-populate.rule">
+      <Filter>CMake Rules</Filter>
+    </CustomBuild>
+    <CustomBuild Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeLists.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="C:\Users\apost\source\repos\MonteCarloSimulation\build\_deps\googletest-subbuild\CMakeFiles\googletest-populate" />
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="CMake Rules">
+      <UniqueIdentifier>{EF9350CB-ECBD-3495-895E-B0D26678F589}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

@@ -33,3 +33,15 @@ target_include_directories(montecarlo PRIVATE include)
 if(MSVC)
     target_compile_options(montecarlo PRIVATE /openmp)
 endif()
+
+enable_testing()
+
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/v1.17.0.zip
+)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+add_subdirectory(tests)

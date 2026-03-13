@@ -1,0 +1,15 @@
+﻿add_executable(unit_tests
+    test_options.cpp
+    ../src/options.cpp
+)
+
+target_link_libraries(unit_tests
+    PRIVATE
+    gtest_main
+    OpenMP::OpenMP_CXX
+)
+
+target_include_directories(unit_tests PRIVATE ../include)
+
+include(GoogleTest)
+add_test(NAME unit_tests COMMAND unit_tests)
