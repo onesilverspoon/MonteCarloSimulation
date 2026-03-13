@@ -1,6 +1,6 @@
 #define _USE_MATH_DEFINES
 
-#include "../include/monte_carlo/options.h"
+#include "monte_carlo/options.h"
 #include <iostream>
 #include <iomanip>
 #include <cmath>
