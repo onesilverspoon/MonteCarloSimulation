@@ -138,8 +138,8 @@ MonteCarloResult monte_carlo_sequential(int num_sims, double S, double K, double
         // Weight: (Z² - 1) / (S² * σ² * T)
         double L1 = (std::log(ST1 / S) - Drift) / Vol_sqrt_T;
         double L2 = (std::log(ST2 / S) - Drift) / Vol_sqrt_T;
-        double gamma_weight1 = (Z * Z - 1.0) / (S * S * sigma * sigma * T);
-        double gamma_weight2 = (Z_anti * Z_anti - 1.0) / (S * S * sigma * sigma * T);
+        double gamma_weight1 = (Z * Z - 1.0) / (S * S * sigma * sigma * T) - Z / (S * S * sigma * sqrt_T);
+        double gamma_weight2 = (Z_anti * Z_anti - 1.0) / (S * S * sigma * sigma * T) - Z_anti / (S * S * sigma * sqrt_T);
 
         gamma_call_sum += call_payoff1 * gamma_weight1 + call_payoff2 * gamma_weight2;
         gamma_put_sum += put_payoff1 * gamma_weight1 + put_payoff2 * gamma_weight2;
