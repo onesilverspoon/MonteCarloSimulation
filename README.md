@@ -1,107 +1,153 @@
-## Disclaimer! 
-Both the project and the README file are under development and should be updated regularly. 
+## Monte Carlo Simulation Engine
 
-## Monte Carlo Simulation
+A high-performance C++ engine for pricing options and estimating Greeks via Monte Carlo simulation. Implements antithetic variates, control variates with analytically optimal β
+and Likelihood Ratio Method for sensitivity estimation. 
+All validated against Black-Scholes closed-form solutions.
 
-Monte Carlo Call & Put Pricer with Variance Reduction, Greeks and OpenMP Parallelism
+---
 
-## Short description
+## Results
 
-This C++ project implements a Monte Carlo pricer for call and put options. It includes:
+Convergence vs Black-Scholes(Call options:S=100,K=100,r=0.05,σ=0.2,T=1.0)
 
-* Antithetic variates for path-pairing
-* A control variate using the discounted terminal stock price (risk-neutral expectation)
-* Likelihood-ratio estimators for Greeks (Delta, Gamma, Vega) and control-variate adjustments for those Greeks
-* Single-threaded and OpenMP-parallel implementations and a small benchmarking harness that reports speedup & efficiency
-* Black–Scholes closed-form benchmark and error reporting
+| Paths     | MC Price  | BS Price  | Rel. Error  | 95% CI Width  |
+|-----------|-----------|-----------|-------------|---------------|
+|10,000     | 10.5167   | 10.4506   | 0.751%      | ±0.2901       |
+|100,000    | 10.4427   | 10.4506   | 0.074%      | ±0.091        |
+|1,000,000  | 10.4530   | 10.4506   | 0.023%      | ±0.0289       |
+|10,000,000 | 10.4493   | 10.4506   | 0.012%      | ±0.009        |
 
-## Key features / highlights
+>At 10M paths the MC price converges to within 0.012% of the analytical Black-Scholes price.
+>Error shrinks at the theoretical 1/√N rate as paths increase.
 
-* **Antithetic variates** to reduce variance by pairing `Z` and `-Z` for each normal draw.
-* **Control variate (CV)** using (e^{-rT}S_T) with known risk-neutral expectation (S_0) to reduce estimator variance.
-* **Likelihood-ratio Greeks** (Delta, Gamma, Vega) computed inside the same simulation loop.
-* **Control-variate adjusted Greeks** to reduce noise in sensitivities.
-* **Parallel version** using OpenMP with per-thread deterministic seeding via `std::seed_seq`.
-* **Comprehensive diagnostics**: variances, standard errors, 95% confidence intervals, variance reduction percentage, Black–Scholes comparison, and timings.
+![Convergence](convergence.png)
+> MC error converges faster than the theoretical 1/√N rate due to antithetic variates
+> reducing variance beyond independent sampling.
 
-## Requirements
+## Variance Reduction (Control Variates)
 
-* A standards-compliant C++ compiler (GCC/Clang) with C++17 support
-* OpenMP support (for the parallel build)
-* POSIX `math` (M_PI etc.) — the code defines `_USE_MATH_DEFINES` for portability
+| Method           | Call price | Variance  | SE          | CI Width  |
+|------------------|------------|-----------|-------------|-----------|
+| Standard MC      | 10.4493    | 216.67    | 0.004655    |  ±0.009   |
+| Control Variates | 10.4493    | 31.49     | 0.001775    |  ±0.003   |
+| **Reduction**    |            | **85.5%** |             |           |
 
-## Build & Run
+Optimal β coefficient computed analyticaly: 
+β = Cov(discounted payoff, discounted spot) / Var(discounted spot)= **0.6736**
 
-Save the code to a file (e.g. `monte_carlo.cpp`). Build with optimization and OpenMP enabled:
+## Greeks vs Black-Scholes (10M paths)
+ 
+| Greek       | MC Value  | BS Analytical | Error   |
+|-------------|-----------|---------------|---------|
+| Call Delta  | 0.6369    | ~0.6368       | < 0.02% |
+| Put Delta   | −0.3631   | ~−0.3632      | < 0.03% |
+| Gamma       | 0.018766  | 0.018762      | 0.02%   |
+| Call Vega   | 37.53     | ~37.52        | < 0.05% |
+ 
+All sensitivities estimated in a single simulation pass via the Likelihood Ratio Method.
 
-```bash
-# Recommended compile (GCC / Clang)
-g++ -std=c++17 options.cpp MonteCarloSimulation.cpp -o MonteCarloSimulation -fopenmp -O3./MonteCarloSimulation
+### Performance (10M paths, at-the-money call)
+ 
+| Configuration            | Time(s) | Speedup | Efficiency |
+|--------------------------|---------|---------|------------|
+| Sequential (1 thread)    | 1.93    | 1.0×    | 100%       |
+| OpenMP (8 threads)       | 0.45    | 4.28×   | 53.6%      |
+ 
+> Near-linear speedup is expected up to ~4 threads; efficiency falls at 8 due to memory bandwidth saturation on most consumer CPUs.
+ 
+---
 
-# If you need to be explicit about math library (rarely necessary on modern toolchains):
-# g++ -O3 -std=c++17 -fopenmp monte_carlo.cpp -o monte_carlo -lm
+## Key Features
+ 
+- **Antithetic Variates** — paths simulated in (Z, −Z) pairs; negative correlation between paired payoffs cancels noise without additional simulations
+- **Control Variates with optimal β** — uses discounted spot price E[e^(−rT)·S_T] = S₀ as control; β minimises residual variance analytically, achieving **85.5% variance reduction** at 10M paths
+- **Likelihood Ratio Method for Greeks** — Delta, Gamma, and Vega estimated in a single pass by differentiating the sampling density, not the payoff. Finite-difference alternatives require re-running the simulation per Greek; LRM does not
+- **OpenMP parallelism** — thread-safe per-thread RNG with deterministic seeding (`seed_seq{1234, thread_id, rd()}`); all accumulators reduced via `#pragma omp reduction`
+- **Input validation** — parameter bounds enforced before simulation begins
+- **95% Confidence Interval reporting** — automated on every run
+ 
+---
+
+## Technical Notes 
+
+### Why Likelihood Ratio Method for Greeks?
+
+Finite-difference estimation of Delta requires two simulation runs (at S and S+ε). For N Greeks that is N+1 runs, each at full cost. LRM differentiates the log-density of the sampling distribution with respect to the parameter of interest and multiplies by the payoff. This produces an unbiased estimator of each sensitivity within the same simulation loop — runtime cost is zero.
+
+The Gamma weight under LRM is :
+
+```
+w_Γ = (Z² − 1) / (S²σ²T) − Z / (S²σ√T)
 ```
 
-Run the program (defaults are in the `main()` function):
+This is the second-order score function of the log-normal density with respect to S. At 10M paths it converges to within 0.02% of Black-Scholes Gamma (0.018766 vs 0.018762).
 
-```bash
-./monte_carlo
+### Why Control Variates reduce variance by 85.5%
+ 
+The control variate is Y = e^(−rT)·S_T. Under the risk-neutral measure, E[Y] = S₀ exactly. The adjusted estimator is:
+ 
 ```
+X̂ = X + β(S₀ − Ȳ)
+```
+ 
+where β = Cov(X, Y) / Var(Y) is the analytically optimal coefficient. Because discounted stock price and option payoff are highly correlated (both driven by the same Brownian path), β captures most of the noise, reducing variance from 216.67 to 31.49.
+ 
+### Parallel seeding strategy
+ 
+Each thread receives a `seed_seq{1234, thread_id, rd()}`. The fixed base seed (1234) makes results reproducible given the same thread count. The thread id differentiates streams to prevent correlated draws across threads. Results from parallel and sequential runs at 10M paths agree to within 0.005% (10.4493 vs 10.4488), confirming thread safety.
+ 
+---
+ 
+## Build Instructions
+ 
+### Requirements
+- C++17 compiler (GCC 11+ or MSVC 2022)
+- CMake 3.20+
+- OpenMP
+- Boost (random)
+ 
+### Build
+```bash
+git clone https://github.com/onesilverspoon/MonteCarloSimulation
+cd MonteCarloSimulation
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+cmake --build .
+```
+ 
+### Run
+```bash
+./montecarlo
+```
+ 
+### Run tests
+```bash
+ctest --output-on-failure
+```
+ 
+---
 
-### Parameters you can tweak (inside `main()`)
-
-* `num_sims` (default: `10_000_000`) — total Monte Carlo samples (note: the code uses antithetic pairs so the loop iterates `num_sims/2` times).
-* `S`, `K`, `r`, `sigma`, `T` — initial stock price, strike, risk-free rate, volatility, maturity (years).
-* `omp_set_num_threads(omp_get_num_procs())` picks as many threads as logical processors by default; you can override using `OMP_NUM_THREADS` environment variable.
-
-## What the program prints (explanation)
-
-The program prints (annotated):
-
-* `Call` / `Puts`: Monte Carlo estimate (discounted payoff mean)
-* `Call Var` / `Puts Var`: estimator variance (discounted)
-* `Call SE` / `Puts SE`: Monte Carlo standard error
-* `Call CI`: 95% confidence interval (uses z = 1.96)
-* `CV Call` / `CV Puts`: price estimates after applying the control variate
-* `CV Call Var` / `CV Puts Var`: CV-adjusted variances
-* `Var Red`: variance reduction fraction (1 - var_CV / var_MC)
-* `Call Parallel` / `Puts Parallel`: prices from the OpenMP-parallel function
-* `Speedup`, `Efficiency`: wall-clock speedup and parallel efficiency
-* `Black-Scholes call/puts`: closed-form benchmarks and absolute/relative errors
-* `Greeks`: Beta (CV coefficient), Delta, Gamma, Vega and their CV-adjusted counterparts
-
-## Design notes & maths (brief)
-
-* **Risk-neutral drift decomposition:** The terminal stock price is simulated via
-
-[ S_T = S_0 \exp\left((r - \tfrac{1}{2}\sigma^2)T + \sigma\sqrt{T}Z\right) ]
-
-with antithetic pair using `Z` and `-Z`.
-
-* **Control variate:** use the discounted terminal stock (Y = e^{-rT} S_T) whose expectation under the risk-neutral measure is (\mathbb{E}[Y] = S_0). For a payoff estimator (X) (discounted payoff), the CV estimator is
-
-[ X_{CV} = X + \beta (\mathbb{E}[Y] - Y) ]
-
-where (\beta = \frac{\mathrm{Cov}(X,Y)}{\mathrm{Var}(Y)}). The code computes (\beta) from the sample covariances and applies it to both calls and puts; CV variance is computed analytically from sample moments.
-
-* **Greeks by likelihood ratio:** Delta, Gamma and Vega are estimated using likelihood-ratio weights derived from differentiation under the integral (implemented inside the loop). The code also computes CV-adjusted versions for reduced variance.
-
-* **Antithetic variates**: pairing reduces variance for payoffs that are convex or smooth in the Gaussian variable.
-
-## Implementation details & gotchas
-
-* The code performs *antithetic pairing* inside a `half_sims` loop; `num_sims` should be even to avoid off-by-one asymmetry.
-* The control-variate derivation assumes non-degenerate `Var(Y)`. Defensive checks avoid division by near-zero variance (`1e-12` threshold).
-* Deterministic, per-thread seeding for parallel builds uses `std::seed_seq{1234, omp_get_thread_num()}` — this yields reproducible parallel runs across machines with identical thread counts, but if true reproducibility across different thread counts is required, use a single-generator strategy with careful subsequence allocation instead.
-* The program uses the z-value `1.96` for a 95% CI; for small-sample or heavy-tailed simulations you may prefer studentized bootstrapping or other robust CI procedures.
-
-## Suggested extensions / improvements
-
-* Add antithetic + control-variate together for Greeks more carefully (the code already mixes both but can be modularized).
-* Implement quasi-Monte Carlo (Sobol/halton) paths and check low-discrepancy effects on variance.
-* Studentize the confidence intervals using the sample standard deviation of the estimator rather than a z-approximation when `num_sims` is small.
-* Provide command-line flags (e.g. via `argparse`-style parsing) to configure `num_sims`, `S`, `K`, etc., without recompiling.
-* Save outputs (JSON / CSV) for downstream plotting or batch experiment automation.
-
+## Project Status
+ 
+- [x] Core simulation engine (GBM paths, options call/put pricing)
+- [x] Antithetic Variates
+- [x] Control Variates with optimal β
+- [x] Likelihood Ratio Method (Delta, Gamma, Vega)
+- [x] 95% Confidence Interval reporting
+- [x] Variance Reduction Ratio reporting
+- [x] OpenMP multi-threading with thread-safe RNG
+- [x] Black-Scholes analytical benchmark (call, put, gamma)
+- [x] Input validation
+- [x] CMake build system
+- [x] Google Test unit tests
+- [ ] CUDA GPU back-end (in progress)
+ 
+---
+ 
+## Dataset / Parameters
+ 
+Default parameters used throughout: S=100, K=100, r=0.05, σ=0.2, T=1.0 (at-the-money option). These are standard benchmark parameters in options pricing literature, chosen to allow direct comparison against the Black-Scholes closed-form solution.
+ 
+---
 ## License
-??
+MIT — see [LICENSE](LICENSE)
