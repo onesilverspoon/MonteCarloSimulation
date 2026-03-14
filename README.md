@@ -144,3 +144,6 @@ ctest --output-on-failure
  
 Default parameters used throughout: S=100, K=100, r=0.05, σ=0.2, T=1.0 (at-the-money option). These are standard benchmark parameters in options pricing literature, chosen to allow direct comparison against the Black-Scholes closed-form solution.
  
+---
+## License
+MIT — see [LICENSE](LICENSE)
