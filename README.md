@@ -42,7 +42,7 @@ Optimal β coefficient computed analyticaly:
  
 All sensitivities estimated in a single simulation pass via the Likelihood Ratio Method.
 
-### Performance (10M paths, at-the-money European call)
+### Performance (10M paths, at-the-money call)
  
 | Configuration            | Time   | Speedup | Efficiency |
 |--------------------------|--------|---------|------------|
@@ -125,7 +125,7 @@ ctest --output-on-failure
 
 ## Project Status
  
-- [x] Core simulation engine (GBM paths, European call/put pricing)
+- [x] Core simulation engine (GBM paths, options call/put pricing)
 - [x] Antithetic Variates
 - [x] Control Variates with optimal β
 - [x] Likelihood Ratio Method (Delta, Gamma, Vega)
@@ -142,5 +142,5 @@ ctest --output-on-failure
  
 ## Dataset / Parameters
  
-Default parameters used throughout: S=100, K=100, r=0.05, σ=0.2, T=1.0 (at-the-money European option). These are standard benchmark parameters in options pricing literature, chosen to allow direct comparison against the Black-Scholes closed-form solution.
+Default parameters used throughout: S=100, K=100, r=0.05, σ=0.2, T=1.0 (at-the-money option). These are standard benchmark parameters in options pricing literature, chosen to allow direct comparison against the Black-Scholes closed-form solution.
  
