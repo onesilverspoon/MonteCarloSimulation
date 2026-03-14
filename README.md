@@ -20,6 +20,10 @@ Convergence vs Black-Scholes(Call options:S=100,K=100,r=0.05,σ=0.2,T=1.0)
 >At 10M paths the MC price converges to within 0.012% of the analytical Black-Scholes price.
 >Error shrinks at the theoretical 1/√N rate as paths increase.
 
+![Convergence](convergence.png)
+> MC error converges faster than the theoretical 1/√N rate due to antithetic variates
+> reducing variance beyond independent sampling.
+
 ## Variance Reduction (Control Variates)
 
 | Method           | Call price | Variance  | SE          | CI Width  |
