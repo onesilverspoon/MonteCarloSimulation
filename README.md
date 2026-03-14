@@ -44,10 +44,10 @@ All sensitivities estimated in a single simulation pass via the Likelihood Ratio
 
 ### Performance (10M paths, at-the-money call)
  
-| Configuration            | Time   | Speedup | Efficiency |
-|--------------------------|--------|---------|------------|
-| Sequential (1 thread)    | 1.93   | 1.0×    | 100%       |
-| OpenMP (8 threads)       | 0.45   | 4.28×   | 53.6%      |
+| Configuration            | Time(s) | Speedup | Efficiency |
+|--------------------------|---------|---------|------------|
+| Sequential (1 thread)    | 1.93    | 1.0×    | 100%       |
+| OpenMP (8 threads)       | 0.45    | 4.28×   | 53.6%      |
  
 > Near-linear speedup is expected up to ~4 threads; efficiency falls at 8 due to memory bandwidth saturation on most consumer CPUs.
  
@@ -64,7 +64,7 @@ All sensitivities estimated in a single simulation pass via the Likelihood Ratio
  
 ---
 
-## Techical Notes 
+## Technical Notes 
 
 ### Why Likelihood Ratio Method for Greeks?
 
@@ -72,9 +72,9 @@ Finite-difference estimation of Delta requires two simulation runs (at S and S+�
 
 The Gamma weight under LRM is :
 
-'''
+```
 w_Γ = (Z² − 1) / (S²σ²T) − Z / (S²σ√T)
-'''
+```
 
 This is the second-order score function of the log-normal density with respect to S. At 10M paths it converges to within 0.02% of Black-Scholes Gamma (0.018766 vs 0.018762).
 
